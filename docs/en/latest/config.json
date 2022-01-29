@@ -1,5 +1,5 @@
 {
-  "version": "2.12.0",
+  "version": "2.10.3",
   "sidebar": [
     {
       "type": "category",
@@ -35,6 +35,7 @@
           "label": "General",
           "items": [
             "plugins/batch-requests",
+            "plugins/serverless",
             "plugins/redirect",
             "plugins/echo",
             "plugins/gzip",
@@ -51,7 +52,6 @@
             "plugins/response-rewrite",
             "plugins/proxy-rewrite",
             "plugins/grpc-transcode",
-            "plugins/grpc-web",
             "plugins/fault-injection"
           ]
         },
@@ -66,10 +66,7 @@
             "plugins/wolf-rbac",
             "plugins/openid-connect",
             "plugins/hmac-auth",
-            "plugins/authz-casbin",
-            "plugins/ldap-auth",
-            "plugins/opa",
-            "plugins/forward-auth"
+            "plugins/authz-casbin"
           ]
         },
         {
@@ -81,8 +78,7 @@
             "plugins/ip-restriction",
             "plugins/ua-restriction",
             "plugins/referer-restriction",
-            "plugins/consumer-restriction",
-            "plugins/csrf"
+            "plugins/consumer-restriction"
           ]
         },
         {
@@ -98,7 +94,6 @@
             "plugins/api-breaker",
             "plugins/traffic-split",
             "plugins/request-id",
-            "plugins/proxy-control",
             "plugins/client-control"
           ]
         },
@@ -109,9 +104,7 @@
             "plugins/prometheus",
             "plugins/zipkin",
             "plugins/skywalking",
-            "plugins/opentelemetry",
-            "plugins/node-status",
-            "plugins/datadog"
+            "plugins/node-status"
           ]
         },
         {
@@ -119,29 +112,13 @@
           "label": "Loggers",
           "items": [
             "plugins/http-logger",
-            "plugins/skywalking-logger",
             "plugins/tcp-logger",
             "plugins/kafka-logger",
-            "plugins/rocketmq-logger",
             "plugins/udp-logger",
             "plugins/syslog",
             "plugins/log-rotate",
             "plugins/error-log-logger",
-            "plugins/sls-logger",
-            "plugins/google-cloud-logging",
-            "plugins/splunk-hec-logging",
-            "plugins/file-logger",
-            "plugins/loggly"
-          ]
-        },
-        {
-          "type": "category",
-          "label": "Serverless",
-          "items": [
-            "plugins/serverless",
-            "plugins/azure-functions",
-            "plugins/openwhisk",
-            "plugins/aws-lambda"
+            "plugins/sls-logger"
           ]
         },
         {
@@ -233,15 +210,7 @@
         },
         {
           "type": "doc",
-          "id": "apisix-variable"
-        },
-        {
-          "type": "doc",
           "id": "external-plugin"
-        },
-        {
-          "type": "doc",
-          "id": "wasm"
         },
         {
           "type": "doc",

@@ -17,15 +17,17 @@
 local core     = require("apisix.core")
 local log_util = require("apisix.utils.log-util")
 local producer = require ("resty.kafka.producer")
-local bp_manager_mod = require("apisix.utils.batch-processor-manager")
+local batch_processor = require("apisix.utils.batch-processor")
 local plugin = require("apisix.plugin")
 
 local math     = math
 local pairs    = pairs
 local type     = type
 local plugin_name = "kafka-logger"
-local batch_processor_manager = bp_manager_mod.new("kafka logger")
+local stale_timer_running = false
+local timer_at = ngx.timer.at
 local ngx = ngx
+local buffers = {}
 
 local lrucache = core.lrucache.new({
     type = "plugin",
@@ -64,22 +66,13 @@ local schema = {
         },
         key = {type = "string"},
         timeout = {type = "integer", minimum = 1, default = 3},
+        name = {type = "string", default = "kafka logger"},
+        max_retry_count = {type = "integer", minimum = 0, default = 0},
+        retry_delay = {type = "integer", minimum = 0, default = 1},
+        buffer_duration = {type = "integer", minimum = 1, default = 60},
+        inactive_timeout = {type = "integer", minimum = 1, default = 5},
+        batch_max_size = {type = "integer", minimum = 1, default = 1000},
         include_req_body = {type = "boolean", default = false},
-        include_req_body_expr = {
-            type = "array",
-            minItems = 1,
-            items = {
-                type = "array"
-            }
-        },
-        include_resp_body = {type = "boolean", default = false},
-        include_resp_body_expr = {
-            type = "array",
-            minItems = 1,
-            items = {
-                type = "array"
-            }
-        },
         -- in lua-resty-kafka, cluster_name is defined as number
         -- see https://github.com/doujiang24/lua-resty-kafka#new-1
         cluster_name = {type = "integer", minimum = 1, default = 1},
@@ -98,7 +91,7 @@ local _M = {
     version = 0.1,
     priority = 403,
     name = plugin_name,
-    schema = batch_processor_manager:wrap_schema(schema),
+    schema = schema,
     metadata_schema = metadata_schema,
 }
 
@@ -107,12 +100,7 @@ function _M.check_schema(conf, schema_type)
     if schema_type == core.schema.TYPE_METADATA then
         return core.schema.check(metadata_schema, conf)
     end
-
-    local ok, err = core.schema.check(schema, conf)
-    if not ok then
-        return nil, err
-    end
-    return log_util.check_log_schema(conf)
+    return core.schema.check(schema, conf)
 end
 
 
@@ -143,6 +131,24 @@ local function get_partition_id(prod, topic, log_message)
 end
 
 
+-- remove stale objects from the memory after timer expires
+local function remove_stale_objects(premature)
+    if premature then
+        return
+    end
+
+    for key, batch in pairs(buffers) do
+        if #batch.entry_buffer.entries == 0 and #batch.batch_to_process == 0 then
+            core.log.warn("removing batch processor stale object, conf: ",
+                          core.json.delay_encode(key))
+            buffers[key] = nil
+        end
+    end
+
+    stale_timer_running = false
+end
+
+
 local function create_producer(broker_list, broker_config, cluster_name)
     core.log.info("create new kafka producer instance")
     return producer:new(broker_list, broker_config, cluster_name)
@@ -161,11 +167,6 @@ local function send_kafka_data(conf, log_message, prod)
     end
 
     return true
-end
-
-
-function _M.body_filter(conf, ctx)
-    log_util.collect_body(conf, ctx)
 end
 
 
@@ -189,7 +190,15 @@ function _M.log(conf, ctx)
         end
     end
 
-    if batch_processor_manager:add_entry(conf, entry) then
+    if not stale_timer_running then
+        -- run the timer every 30 mins if any log is present
+        timer_at(1800, remove_stale_objects)
+        stale_timer_running = true
+    end
+
+    local log_buffer = buffers[conf]
+    if log_buffer then
+        log_buffer:push(entry)
         return
     end
 
@@ -237,7 +246,25 @@ function _M.log(conf, ctx)
         return send_kafka_data(conf, data, prod)
     end
 
-    batch_processor_manager:add_entry_to_new_processor(conf, entry, ctx, func)
+    local config = {
+        name = conf.name,
+        retry_delay = conf.retry_delay,
+        batch_max_size = conf.batch_max_size,
+        max_retry_count = conf.max_retry_count,
+        buffer_duration = conf.buffer_duration,
+        inactive_timeout = conf.inactive_timeout,
+    }
+
+    local err
+    log_buffer, err = batch_processor:new(func, config)
+
+    if not log_buffer then
+        core.log.error("error when creating the batch processor: ", err)
+        return
+    end
+
+    buffers[conf] = log_buffer
+    log_buffer:push(entry)
 end
 
 

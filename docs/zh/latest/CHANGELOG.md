@@ -23,8 +23,6 @@ title: CHANGELOG
 
 ## Table of Contents
 
-- [2.12.0](#2120)
-- [2.11.0](#2110)
 - [2.10.3](#2103)
 - [2.10.2](#2102)
 - [2.10.1](#2101)
@@ -51,102 +49,54 @@ title: CHANGELOG
 - [0.7.0](#070)
 - [0.6.0](#060)
 
-## 2.12.0
-
-### Change
-
-- 重命名 serverless 插件的 "balancer" phase 为 "before_proxy" [#5992](https://github.com/apache/apisix/pull/5992)
-- 不再承诺支持 Tengine [#5961](https://github.com/apache/apisix/pull/5961)
-- 当 L4 支持 和 Admin API 都启用时，自动开启 HTTP 支持 [#5867](https://github.com/apache/apisix/pull/5867)
-
-### Core
-
-- :sunrise: 支持 TLS over TCP upstream [#6030](https://github.com/apache/apisix/pull/6030)
-- :sunrise: 支持自定义 APISIX variable [#5941](https://github.com/apache/apisix/pull/5941)
-- :sunrise: 支持集成 Vault [#5745](https://github.com/apache/apisix/pull/5745)
-- :sunrise: 支持 L4 的 access log [#5768](https://github.com/apache/apisix/pull/5768)
-- :sunrise: 支持自定义 http_server_location_configuration_snippet 配置 [#5740](https://github.com/apache/apisix/pull/5740)
-- :sunrise: 支持配置文件环境变量中设置默认值 [#5675](https://github.com/apache/apisix/pull/5675)
-- :sunrise: 支持在 header_filter 阶段运行 Wasm 代码 [#5544](https://github.com/apache/apisix/pull/5544)
-
-### Plugin
-
-- :sunrise: 支持在 basic-auth 中隐藏 Authorization 请求头 [#6039](https://github.com/apache/apisix/pull/6039)
-- :sunrise: 支持动态设置 proxy_request_buffering [#6075](https://github.com/apache/apisix/pull/6075)
-- :sunrise: mqtt 支持通过 client id 负载均衡 [#6079](https://github.com/apache/apisix/pull/6079)
-- :sunrise: 添加 forward-auth 插件 [#6037](https://github.com/apache/apisix/pull/6037)
-- :sunrise: 支持 gRPC-Web 代理 [#5964](https://github.com/apache/apisix/pull/5964)
-- :sunrise: limit-count 支持请求间共享计数器 [#5984](https://github.com/apache/apisix/pull/5984)
-- :sunrise: limit-count 支持在路由间共享计数器 [#5881](https://github.com/apache/apisix/pull/5881)
-- :sunrise: 新增 splunk hec logging 插件 [#5819](https://github.com/apache/apisix/pull/5819)
-- :sunrise: 新增 OPA 插件 [#5734](https://github.com/apache/apisix/pull/5734)
-- :sunrise: 新增 rocketmq logger 插件 [#5653](https://github.com/apache/apisix/pull/5653)
-- :sunrise: mqtt 支持直接使用 route 上配置的 upstream [#5666](https://github.com/apache/apisix/pull/5666)
-- :sunrise: ext-plugin 支持获取请求体 [#5600](https://github.com/apache/apisix/pull/5600)
-- :sunrise: 新增 aws lambda 插件 [#5594](https://github.com/apache/apisix/pull/5594)
-- :sunrise: http/kafka-logger 插件支持记录响应体 [#5550](https://github.com/apache/apisix/pull/5550)
-- :sunrise: 新增 Apache OpenWhisk 插件 [#5518](https://github.com/apache/apisix/pull/5518)
-- :sunrise: 支持 google cloud logging service [#5538](https://github.com/apache/apisix/pull/5538)
+## 2.10.3
 
 ### Bugfix
 
-- 同时启用 error-log-logger 和 prometheusis 时报告 labels inconsistent 的问题 [#6055](https://github.com/apache/apisix/pull/6055)
-- 支持禁止 IPv6 IP 解析 [#6023](https://github.com/apache/apisix/pull/6023)
-- 正确处理 MQTT 5 中的 properties [#5916](https://github.com/apache/apisix/pull/5916)
-- sls-logger 上报的 timestamp 补上毫秒部分 [#5820](https://github.com/apache/apisix/pull/5820)
-- MQTT 中的 client id 可以为空 [#5816](https://github.com/apache/apisix/pull/5816)
-- ext-plugin 避免使用过期的 key [#5782](https://github.com/apache/apisix/pull/5782)
-- 解决 log-rotate 中 reopen log 和压缩中的 race [#5715](https://github.com/apache/apisix/pull/5715)
-- 释放 batch-processor 中过期对象 [#5700](https://github.com/apache/apisix/pull/5700)
-- 解决被动健康检查时配置被污染的问题 [#5589](https://github.com/apache/apisix/pull/5589)
-
-## 2.11.0
-
-### Change
-
-- wolf-rbac 插件变更默认端口，并在文档中增加 authType 参数 [#5477](https://github.com/apache/apisix/pull/5477)
-
-### Core
-
-- :sunrise: 支持基于 POST 表单的高级路由匹配 [#5409](https://github.com/apache/apisix/pull/5409)
-- :sunrise: 初步的 WASM 支持 [#5288](https://github.com/apache/apisix/pull/5288)
-- :sunrise: control API 暴露 service 配置 [#5271](https://github.com/apache/apisix/pull/5271)
-- :sunrise: control API 暴露 upstream 配置 [#5259](https://github.com/apache/apisix/pull/5259)
-- :sunrise: 支持在 etcd 少于半数节点不可用时成功启动 [#5158](https://github.com/apache/apisix/pull/5158)
-- :sunrise: 支持 etcd 配置里面自定义 SNI [#5206](https://github.com/apache/apisix/pull/5206)
-
-### Plugin
-
-- :sunrise: 新增 Azure-functions 插件 [#5479](https://github.com/apache/apisix/pull/5479)
-- :sunrise: kafka-logger 支持动态记录请求体 [#5501](https://github.com/apache/apisix/pull/5501)
-- :sunrise: 新增 skywalking-logger 插件 [#5478](https://github.com/apache/apisix/pull/5478)
-- :sunrise: 新增 datadog 插件 [#5372](https://github.com/apache/apisix/pull/5372)
-- :sunrise: limit-* 系列插件，在 key 对应的值不存在时，回退到用客户端地址作为限流的 key [#5422](https://github.com/apache/apisix/pull/5422)
-- :sunrise: limit-count 支持使用多个变量作为 key [#5378](https://github.com/apache/apisix/pull/5378)
-- :sunrise: limit-conn 支持使用多个变量作为 key [#5354](https://github.com/apache/apisix/pull/5354)
-- :sunrise: proxy-rewrite 支持改写 HTTP method [#5292](https://github.com/apache/apisix/pull/5292)
-- :sunrise: limit-req 支持使用多个变量作为 key [#5302](https://github.com/apache/apisix/pull/5302)
-- :sunrise: proxy-cache 支持基于内存的缓存机制 [#5028](https://github.com/apache/apisix/pull/5028)
-- :sunrise: ext-plugin 避免发送重复的 conf 请求 [#5183](https://github.com/apache/apisix/pull/5183)
-- :sunrise: 新增 ldap-auth 插件 [#3894](https://github.com/apache/apisix/pull/3894)
-
-## 2.10.3
-
-**这是一个 LTS 维护版本，您可以在 `release/2.10` 分支中看到 CHANGELOG。**
-
-[https://github.com/apache/apisix/blob/release/2.10/CHANGELOG.md#2103](https://github.com/apache/apisix/blob/release/2.10/CHANGELOG.md#2103)
+- 修正插件加载错误日志拼接方式 [#5540](https://github.com/apache/apisix/pull/5540)
+- 修正插件加载时忽略 /apisix/plugins/ 改变 [#5558](https://github.com/apache/apisix/pull/5558)
+- 修正改变被动健康检查后的无效错误 [#5589](https://github.com/apache/apisix/pull/5589)
+- 修正 batch-processor 中未被正确释放的陈旧对象 [#5700](https://github.com/apache/apisix/pull/5700)
+- 通过 math.randomseed 补丁提供更具随机性的随机数生成 [#5682](https://github.com/apache/apisix/pull/5682)
+- 修正 log-rotate 插件开启压缩后的日志收集异常 [#5715](https://github.com/apache/apisix/pull/5715)
+- 避免 ext-plugin 多次发送配置数据 [#5183](https://github.com/apache/apisix/pull/5183)
+- 在 ext-plugin 中使用锁确保总是从共享存储中获取 token [#5263](https://github.com/apache/apisix/pull/5263)
+- 修正 ext-plugin 使用陈旧的 key [#5782](https://github.com/apache/apisix/pull/5782)
+- 允许在使用 mqtt-proxy 插件时 client id 为空的情况 [#5816](https://github.com/apache/apisix/pull/5816)
+- 修正 sls-logger 插件中日志不支持毫秒级时间戳 [#5820](https://github.com/apache/apisix/pull/5820)
+- 完善 ua-restriction 插件中配置检查逻辑 [#5728](https://github.com/apache/apisix/pull/5728)
+- 在 cors 插件中防止 Origin 被修改 [#5890](https://github.com/apache/apisix/pull/5890)
+- 确保使用 proxy-rewrite 插件时会更新 core.request.header 的缓存 [#5914](https://github.com/apache/apisix/pull/5914)
+- 修正 mqtt-proxy 插件中对 MQTT5 的属性处理 [#5916](https://github.com/apache/apisix/pull/5916)
 
 ## 2.10.2
 
-**这是一个 LTS 维护版本，您可以在 `release/2.10` 分支中看到 CHANGELOG。**
+### Bugfix
 
-[https://github.com/apache/apisix/blob/release/2.10/CHANGELOG.md#2102](https://github.com/apache/apisix/blob/release/2.10/CHANGELOG.md#2102)
+- 更正 response.set_header 行为，与 request.set_header 保持一致 [#5499](https://github.com/apache/apisix/pull/5499)
+- 修复 batch-requests 插件中 client ip 的问题 [#5476](https://github.com/apache/apisix/pull/5476)
+- 修复 upstream 被多条 routes 绑定时，负载不平衡的问题 [#5462](https://github.com/apache/apisix/pull/5462)
+- hmac-auth 插件检查是否缺少 X-HMAC-ALGORITHM header [#5467](https://github.com/apache/apisix/pull/5467)
+- 防止不可信的 request_uri [#5458](https://github.com/apache/apisix/pull/5458)
+- 修复用 PATCH 方法修改 boolean 参数的问题 [#5434](https://github.com/apache/apisix/pull/5432)
+- 修复 traffic-split 插件 upstream_key 重复的问题 [#5414](https://github.com/apache/apisix/pull/5414)
+- basic-auth 插件处理无效的 Authorization header [#5419](https://github.com/apache/apisix/pull/5419)
+
+### Change
+
+- 只记录不敏感的 consumer 信息 [#5445](https://github.com/apache/apisix/pull/5445)
 
 ## 2.10.1
 
-**这是一个 LTS 维护版本，您可以在 `release/2.10` 分支中看到 CHANGELOG。**
+### Bugfix
 
-[https://github.com/apache/apisix/blob/release/2.10/CHANGELOG.md#2101](https://github.com/apache/apisix/blob/release/2.10/CHANGELOG.md#2101)
+- 更正 zipkin 插件 response_span 的开始时间 [#5295](https://github.com/apache/apisix/pull/5295)
+- 避免发送过期 key 给 plugin runner [#5309](https://github.com/apache/apisix/pull/5309)
+- 更正 route 的 timeout 被 service 覆盖的问题 [#5219](https://github.com/apache/apisix/pull/5219)
+- 过滤掉初始化 etcd 数据时产生的空 plugin conf [#5204](https://github.com/apache/apisix/pull/5204)
+- 健康检查特定情况下会发送错误的 Host header [#5175](https://github.com/apache/apisix/pull/5175)
+- 升级 lua-resty-balancer 到 0.04 [#5144](https://github.com/apache/apisix/pull/5144)
+- prometheus 插件修复偶发的 latency 为负数的问题 [#5150](https://github.com/apache/apisix/pull/5150)
 
 ## 2.10.0
 

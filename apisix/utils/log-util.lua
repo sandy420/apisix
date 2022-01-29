@@ -15,7 +15,6 @@
 -- limitations under the License.
 --
 local core = require("apisix.core")
-local expr = require("resty.expr.v1")
 local ngx  = ngx
 local pairs = pairs
 local ngx_now = ngx.now
@@ -73,28 +72,6 @@ local function get_custom_format_log(ctx, format)
 end
 _M.get_custom_format_log = get_custom_format_log
 
-
-local function latency_details_in_ms(ctx)
-    local latency = (ngx_now() - ngx.req.start_time()) * 1000
-    local upstream_latency, apisix_latency = nil, latency
-
-    if ctx.var.upstream_response_time then
-        upstream_latency = ctx.var.upstream_response_time * 1000
-        apisix_latency = apisix_latency - upstream_latency
-
-        -- The latency might be negative, as Nginx uses different time measurements in
-        -- different metrics.
-        -- See https://github.com/apache/apisix/issues/5146#issuecomment-928919399
-        if apisix_latency < 0 then
-            apisix_latency = 0
-        end
-    end
-
-    return latency, upstream_latency, apisix_latency
-end
-_M.latency_details_in_ms = latency_details_in_ms
-
-
 local function get_full_log(ngx, conf)
     local ctx = ngx.ctx.api_ctx
     local var = ctx.var
@@ -117,8 +94,6 @@ local function get_full_log(ngx, conf)
             username = ctx.consumer.username
         }
     end
-
-    local latency, upstream_latency, apisix_latency = latency_details_in_ms(ctx)
 
     local log =  {
         request = {
@@ -144,46 +119,17 @@ local function get_full_log(ngx, conf)
         consumer = consumer,
         client_ip = core.request.get_remote_client_ip(ngx.ctx.api_ctx),
         start_time = ngx.req.start_time() * 1000,
-        latency = latency,
-        upstream_latency = upstream_latency,
-        apisix_latency = apisix_latency
+        latency = (ngx.now() - ngx.req.start_time()) * 1000
     }
 
-    if ctx.resp_body then
-        log.response.body = ctx.resp_body
-    end
-
     if conf.include_req_body then
-
-        local log_request_body = true
-
-        if conf.include_req_body_expr then
-
-            if not conf.request_expr then
-                local request_expr, err = expr.new(conf.include_req_body_expr)
-                if not request_expr then
-                    core.log.error('generate request expr err ' .. err)
-                    return log
-                end
-                conf.request_expr = request_expr
-            end
-
-            local result = conf.request_expr:eval(ctx.var)
-
-            if not result then
-                log_request_body = false
-            end
-        end
-
-        if log_request_body then
-            local body = req_get_body_data()
-            if body then
-                log.request.body = body
-            else
-                local body_file = ngx.req.get_body_file()
-                if body_file then
-                    log.request.body_file = body_file
-                end
+        local body = req_get_body_data()
+        if body then
+            log.request.body = body
+        else
+            local body_file = ngx.req.get_body_file()
+            if body_file then
+                log.request.body_file = body_file
             end
         end
     end
@@ -208,57 +154,6 @@ function _M.get_req_original(ctx, conf)
     end
 
     return core.table.concat(headers, "")
-end
-
-
-function _M.check_log_schema(conf)
-    if conf.include_req_body_expr then
-        local ok, err = expr.new(conf.include_req_body_expr)
-        if not ok then
-            return nil, "failed to validate the 'include_req_body_expr' expression: " .. err
-        end
-    end
-    if conf.include_resp_body_expr then
-        local ok, err = expr.new(conf.include_resp_body_expr)
-        if not ok then
-            return nil, "failed to validate the 'include_resp_body_expr' expression: " .. err
-        end
-    end
-    return true, nil
-end
-
-
-function _M.collect_body(conf, ctx)
-    if conf.include_resp_body then
-        local log_response_body = true
-
-        if conf.include_resp_body_expr then
-            if not conf.response_expr then
-                local response_expr, err = expr.new(conf.include_resp_body_expr)
-                if not response_expr then
-                    core.log.error('generate response expr err ' .. err)
-                    return
-                end
-                conf.response_expr = response_expr
-            end
-
-            if ctx.res_expr_eval_result == nil then
-                ctx.res_expr_eval_result = conf.response_expr:eval(ctx.var)
-            end
-
-            if not ctx.res_expr_eval_result then
-                log_response_body = false
-            end
-        end
-
-        if log_response_body then
-            local final_body = core.response.hold_body_chunk(ctx, true)
-            if not final_body then
-                return
-            end
-            ctx.resp_body = final_body
-        end
-    end
 end
 
 

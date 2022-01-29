@@ -275,6 +275,11 @@ local function rotate()
         compression_file(error_new_file)
     end
 
+    if enable_compression then
+        compression_file(access_new_file)
+        compression_file(error_new_file)
+    end
+
     -- clean the oldest file
     local log_list, log_dir = scan_log_folder()
     for i = max_kept + 1, #log_list.error do

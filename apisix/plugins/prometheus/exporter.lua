@@ -16,7 +16,6 @@
 --
 local base_prometheus = require("prometheus")
 local core      = require("apisix.core")
-local plugin    = require("apisix.plugin")
 local ipairs    = ipairs
 local ngx       = ngx
 local ngx_capture = ngx.location.capture
@@ -34,7 +33,6 @@ local clear_tab = core.table.clear
 local get_stream_routes = router.stream_routes
 local get_protos = require("apisix.plugins.grpc-transcode.proto").protos
 local service_fetch = require("apisix.http.service").get
-local latency_details = require("apisix.utils.log-util").latency_details_in_ms
 
 
 
@@ -76,13 +74,7 @@ function _M.init()
     -- We keep the old metric names for the compatibility.
 
     -- across all services
-    local metric_prefix = "apisix_"
-    local attr = plugin.plugin_attr("prometheus")
-    if attr and attr.metric_prefix then
-        metric_prefix = attr.metric_prefix
-    end
-
-    prometheus = base_prometheus.init("prometheus-metrics", metric_prefix)
+    prometheus = base_prometheus.init("prometheus-metrics", "apisix_")
     metrics.connections = prometheus:gauge("nginx_http_current_connections",
             "Number of HTTP connections",
             {"state"})
@@ -151,15 +143,25 @@ function _M.log(conf, ctx)
         gen_arr(vars.status, route_id, matched_uri, matched_host,
                 service_id, consumer_name, balancer_ip))
 
-    local latency, upstream_latency, apisix_latency = latency_details(ctx)
+    local latency = (ngx.now() - ngx.req.start_time()) * 1000
     metrics.latency:observe(latency,
         gen_arr("request", route_id, service_id, consumer_name, balancer_ip))
 
-    if upstream_latency then
+    local apisix_latency = latency
+    if ctx.var.upstream_response_time then
+        local upstream_latency = ctx.var.upstream_response_time * 1000
         metrics.latency:observe(upstream_latency,
             gen_arr("upstream", route_id, service_id, consumer_name, balancer_ip))
-    end
+        apisix_latency =  apisix_latency - upstream_latency
 
+        -- The latency might be negative, as Nginx uses different time measurements in
+        -- different metrics.
+        -- See https://github.com/apache/apisix/issues/5146#issuecomment-928919399
+        if apisix_latency < 0 then
+            apisix_latency = 0
+        end
+
+    end
     metrics.latency:observe(apisix_latency,
         gen_arr("apisix", route_id, service_id, consumer_name, balancer_ip))
 

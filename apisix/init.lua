@@ -15,16 +15,6 @@
 -- limitations under the License.
 --
 local require         = require
--- set the JIT options before any code, to prevent error "changing jit stack size is not
--- allowed when some regexs have already been compiled and cached"
-if require("ffi").os == "Linux" then
-    require("ngx.re").opt("jit_stack_size", 200 * 1024)
-end
-
-require("jit.opt").start("minstitch=2", "maxtrace=4000",
-                         "maxrecord=8000", "sizemcode=64",
-                         "maxmcode=4000", "maxirconst=1000")
-
 require("apisix.patch").patch()
 local core            = require("apisix.core")
 local plugin          = require("apisix.plugin")
@@ -71,6 +61,16 @@ local _M = {version = 0.4}
 
 
 function _M.http_init(args)
+    require("resty.core")
+
+    if require("ffi").os == "Linux" then
+        require("ngx.re").opt("jit_stack_size", 200 * 1024)
+    end
+
+    require("jit.opt").start("minstitch=2", "maxtrace=4000",
+                             "maxrecord=8000", "sizemcode=64",
+                             "maxmcode=4000", "maxirconst=1000")
+
     core.resolver.init_resolver(args)
     core.id.init()
 
@@ -315,7 +315,7 @@ local function verify_tls_client(ctx)
             if res == "NONE" then
                 core.log.error("client certificate was not present")
             else
-                core.log.error("client certificate verification is not passed: ", res)
+                core.log.error("clent certificate verification is not passed: ", res)
             end
 
             return false
@@ -373,11 +373,21 @@ function _M.http_access_phase()
     api_ctx.var.real_request_uri = api_ctx.var.request_uri
     api_ctx.var.request_uri = api_ctx.var.uri .. api_ctx.var.is_args .. (api_ctx.var.args or "")
 
+    if router.api.has_route_not_under_apisix() or
+        core.string.has_prefix(uri, "/apisix/")
+    then
+        local skip = local_conf and local_conf.apisix.global_rule_skip_internal_api
+        local matched = router.api.match(api_ctx, skip)
+        if matched then
+            return
+        end
+    end
+
     router.router_http.match(api_ctx)
 
     local route = api_ctx.matched_route
     if not route then
-        -- run global rule when there is no matching route
+        -- run global rule
         plugin.run_global_rules(api_ctx, router.global_rules, nil)
 
         core.log.info("not find any matched route")
@@ -704,6 +714,10 @@ function _M.http_log_phase()
 
     if api_ctx.server_picker and api_ctx.server_picker.after_balance then
         api_ctx.server_picker.after_balance(api_ctx, false)
+    end
+
+    if api_ctx.uri_parse_param then
+        core.tablepool.release("uri_parse_param", api_ctx.uri_parse_param)
     end
 
     core.ctx.release_vars(api_ctx)
